@@ -1,0 +1,51 @@
+name: IAM Automation
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 2 * * *'  # Runs daily at 2AM UTC
+
+jobs:
+  audit_and_rotate:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-2
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install boto3
+
+    - name: Run IAM Audit Scripts
+      run: |
+        python validate_policies.py
+        python detect_inactive_users.py
+        python detect_stale_keys.py
+
+    - name: Rotate IAM Access Keys
+      run: |
+        python key_rotation.py gwins-mac
+
+    - name: Upload new keys artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: new-iam-keys
+        path: new_keys.json
+
+    - name: Use new keys in mock deployment
+      run: |
+        echo "Deploying with new keys:"
+        cat new_keys.json
