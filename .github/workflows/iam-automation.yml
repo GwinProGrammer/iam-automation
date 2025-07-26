@@ -40,7 +40,7 @@ jobs:
         python key_rotation.py gwins-mac
 
     - name: Upload new keys artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v3.1.2
       with:
         name: new-iam-keys
         path: new_keys.json
